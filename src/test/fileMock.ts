@@ -1,3 +1,3 @@
-const fileMock = 'test-file-mock'
+const fileMock = 'test-file-stub'
 
 export default fileMock
