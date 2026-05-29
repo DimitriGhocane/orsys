@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useAuth } from '../hooks/useAuth.ts'
-import Modal from './Modal.tsx'
+import { useAppDispatch, useAppSelector } from '../store/hooks.ts'
+import {
+    resetLoginForm,
+    selectLoginForm,
+    setLoginForm,
+    updateLoginField,
+} from '../store/slices/loginFormSlice.ts'
+import PageLoader from './PageLoader.tsx'
+
+const Modal = lazy(() => import('./Modal.tsx'))
 
 const AuthBar = () => {
     const { user, isAuthenticated, login, logout } = useAuth()
+    const dispatch = useAppDispatch()
+    const { name, email } = useAppSelector(selectLoginForm)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
 
     const handleLogin = () => {
         login(name, email)
-        setName('')
-        setEmail('')
+        dispatch(resetLoginForm())
         setIsModalOpen(false)
     }
 
@@ -30,8 +38,12 @@ const AuthBar = () => {
     }
 
     const fillDemoCredentials = () => {
-        setName('Alice Martin')
-        setEmail('alice@example.com')
+        dispatch(
+            setLoginForm({
+                name: 'Alice Martin',
+                email: 'alice@example.com',
+            })
+        )
     }
 
     return (
@@ -44,55 +56,72 @@ const AuthBar = () => {
             <button type="button" onClick={() => setIsModalOpen(true)}>
                 Se connecter
             </button>
-
-            <Modal
-                isOpen={isModalOpen}
-                title="Connexion"
-                onClose={() => setIsModalOpen(false)}
+            <Suspense
+                fallback={<PageLoader label="Chargement de la modal..." />}
             >
-                <form
-                    className="auth-form"
-                    onSubmit={(event) => {
-                        event.preventDefault()
-                        handleLogin()
-                    }}
+                <Modal
+                    isOpen={isModalOpen}
+                    title="Connexion"
+                    onClose={() => setIsModalOpen(false)}
                 >
-                    <p className="auth-hint">
-                        Exemple : <strong>Alice Martin</strong> /{' '}
-                        <strong>alice@example.com</strong>
-                    </p>
-
-                    <button
-                        type="button"
-                        className="auth-demo-button"
-                        onClick={fillDemoCredentials}
+                    <form
+                        className="auth-form"
+                        onSubmit={(event) => {
+                            event.preventDefault()
+                            handleLogin()
+                        }}
                     >
-                        Remplir la connexion démo
-                    </button>
+                        <p className="auth-hint">
+                            Exemple : <strong>Alice Martin</strong> /{' '}
+                            <strong>alice@example.com</strong>
+                        </p>
 
-                    <label htmlFor="auth-name">Nom</label>
-                    <input
-                        id="auth-name"
-                        type="text"
-                        value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        placeholder="Alice Martin"
-                        required
-                    />
+                        <button
+                            type="button"
+                            className="auth-demo-button"
+                            onClick={fillDemoCredentials}
+                        >
+                            Remplir la connexion démo
+                        </button>
 
-                    <label htmlFor="auth-email">Email</label>
-                    <input
-                        id="auth-email"
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder="alice@example.com"
-                        required
-                    />
+                        <label htmlFor="auth-name">Nom</label>
+                        <input
+                            id="auth-name"
+                            type="text"
+                            value={name}
+                            onChange={(event) =>
+                                dispatch(
+                                    updateLoginField({
+                                        field: 'name',
+                                        value: event.target.value,
+                                    })
+                                )
+                            }
+                            placeholder="Alice Martin"
+                            required
+                        />
 
-                    <button type="submit">Valider la connexion</button>
-                </form>
-            </Modal>
+                        <label htmlFor="auth-email">Email</label>
+                        <input
+                            id="auth-email"
+                            type="email"
+                            value={email}
+                            onChange={(event) =>
+                                dispatch(
+                                    updateLoginField({
+                                        field: 'email',
+                                        value: event.target.value,
+                                    })
+                                )
+                            }
+                            placeholder="alice@example.com"
+                            required
+                        />
+
+                        <button type="submit">Valider la connexion</button>
+                    </form>
+                </Modal>
+            </Suspense>
         </section>
     )
 }
